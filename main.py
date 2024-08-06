@@ -7,8 +7,17 @@ import pickle
 
 class GameDriver:
     def __init__(self):
+        pygame.init()
         self.win = pygame.display.set_mode(Game.Flappy.SCREEN, pygame.NOFRAME)
         self.game = Game.Flappy(self.win)
+    def train_ai(self, genome, config):
+        start_time = time.time()
+        
+        self.game.loopAI(genome)
+
+        duration = time.time() - start_time
+
+
 
 
 

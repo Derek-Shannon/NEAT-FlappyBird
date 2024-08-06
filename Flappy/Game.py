@@ -158,12 +158,7 @@ class Flappy:
                 self.score_img.update(self.score)
 
                 if pygame.sprite.spritecollide(self.grumpy, self.pipe_group, False) or self.grumpy.rect.top <= 0:
-                    self.game_started = False
-                    if self.grumpy.alive:
-                        self.hit_fx.play()
-                        self.die_fx.play()
-                    self.grumpy.alive = False
-                    self.grumpy.theta = self.grumpy.vel * -2
+                    return
 
                 if self.grumpy.rect.bottom >= self.base_height:
                     self.speed = 0

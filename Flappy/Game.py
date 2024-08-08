@@ -1,8 +1,8 @@
-import pygame
+import pygame, neat
 import random
 
 # Assume that objects.py contains classes Base, Score, Grumpy, and Pipe
-from objects import *
+from Flappy.objects import *
 
 class Flappy:
     SCREEN = WIDTH, HEIGHT = 288, 512
@@ -48,7 +48,7 @@ class Flappy:
         self.pipe_pass = False
         self.pipe_frequency = 1600
         self.last_pipe = pygame.time.get_ticks() - self.pipe_frequency
-
+        
     def loop(self):
         running = True
         while running:
@@ -125,13 +125,44 @@ class Flappy:
                         self.grumpy = Grumpy(self.win)
                         self.pipe_img = random.choice(self.im_list)
                         self.bg = random.choice([self.bg1, self.bg2])
-
             self.clock.tick(self.FPS)
             pygame.display.update()     
-    def loopAI(self, genome):
+    def loopAI(self, genome, config):
+        net = neat.nn.FeedForwardNetwork.create(genome, config)
         running = True
         while running:
             self.win.blit(self.bg, (0, 0))
+            
+            # Get the closest pipes
+            closest_pipe = None
+            min_dist = float('inf')
+            for pipe in self.pipe_group:
+                dist = pipe.rect.right - self.grumpy.rect.left
+                if dist > 0 and dist < min_dist:
+                    min_dist = dist
+                    closest_pipe = pipe
+            
+            if closest_pipe is not None:
+                bottom_pipe_height = closest_pipe.rect.bottom
+                bottom_pipe_x = closest_pipe.rect.x
+            else:
+                bottom_pipe_x = 1000
+                bottom_pipe_height = self.HEIGHT
+
+            # AI
+            relX = bottom_pipe_x - self.grumpy.rect.x
+            relY =  bottom_pipe_height+100 - self.grumpy.rect.y
+            output = net.activate((
+                relX,
+                relY,
+                self.grumpy.vel
+            ))
+            #print(relX,relY,self.grumpy.vel)
+            decision = output[0]
+        
+            if decision > 0.5:
+                self.grumpy.flap()
+            
 
             if self.start_screen:
                 self.speed = 0
@@ -158,11 +189,14 @@ class Flappy:
                 self.score_img.update(self.score)
 
                 if pygame.sprite.spritecollide(self.grumpy, self.pipe_group, False) or self.grumpy.rect.top <= 0:
-                    return
+                    genome.fitness += self.score*2
+                    return #calc fitness
 
                 if self.grumpy.rect.bottom >= self.base_height:
                     self.speed = 0
                     self.game_over = True
+                    genome.fitness += self.score*2
+                    return #calc fitness
 
                 if len(self.pipe_group) > 0:
                     p = self.pipe_group.sprites()[0]
@@ -185,28 +219,26 @@ class Flappy:
                     if event.key == pygame.K_ESCAPE or event.key == pygame.K_q:
                         running = False
                 if event.type == pygame.MOUSEBUTTONDOWN:
-                    if self.start_screen:
-                        self.game_started = True
-                        self.speed = 2
-                        self.start_screen = False
-                        self.game_over = False
-                        self.last_pipe = pygame.time.get_ticks() - self.pipe_frequency
-                        self.pipe_group.empty()
-                        self.speed = 2
-                        self.score = 0
                     if self.game_over:
-                        self.start_screen = True
-                        self.grumpy = Grumpy(self.win)
-                        self.pipe_img = random.choice(self.im_list)
-                        self.bg = random.choice([self.bg1, self.bg2])
+                        genome.fitness += self.score*2
+                        return #calc fitness
 
-            self.clock.tick(self.FPS)
+            if self.start_screen:
+                self.game_started = True
+                self.speed = 2
+                self.start_screen = False
+                self.game_over = False
+                self.last_pipe = pygame.time.get_ticks() - self.pipe_frequency
+                self.pipe_group.empty()
+                self.speed = 2
+                self.score = 0
+            #self.clock.tick(self.FPS)                
             pygame.display.update()
+            genome.fitness += 0.003
 
 # Create an instance of the Flappy class and start the game loop
-pygame.init()
-flappy_game = Flappy(pygame.display.set_mode(Flappy.SCREEN, pygame.NOFRAME))
-flappy_game.loop()
-flappy_game = Flappy(pygame.display.set_mode(Flappy.SCREEN, pygame.NOFRAME))
-flappy_game.loop()
-pygame.quit()
+if __name__ == "__main__":
+    pygame.init()
+    flappy_game = Flappy(pygame.display.set_mode(Flappy.SCREEN, pygame.NOFRAME))
+    flappy_game.loopAI(0)
+    pygame.quit()

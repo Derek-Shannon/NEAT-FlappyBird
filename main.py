@@ -25,22 +25,16 @@ def eval_genomes(genomes, config):
     """
     Run each genome against eachother one time to determine the fitness.
     """
-    width, height = 700, 500
-    win = pygame.display.set_mode((width, height))
-    pygame.display.set_caption("Pong")
-    
+    win = pygame.display.set_mode((Game.WIDTH, Game.HEIGHT))  
 
-    for i, (genome_id1, genome1) in enumerate(genomes):
-        print(round(i/len(genomes) * 100), end=" ")
-        genome1.fitness = 0
-        pong = PongGame(win, width, height)
-
-        force_quit = pong.train_ai(genome1, config, draw=True)
-        if force_quit:
-            quit()
+    for i, (genome_id1, genome) in enumerate(genomes):
+        genome.fitness = 0
+        game = Game.Flappy(pygame.display.set_mode(Game.Flappy.SCREEN, pygame.NOFRAME))
+        game.loopAI(genome, config)
+        print(i, genome.fitness)
 
 
-def run_neat(config):
+def train_ai(config):
     #p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-85')
     p = neat.Population(config)
     p.add_reporter(neat.StdOutReporter(True))
@@ -79,6 +73,14 @@ if __name__ == '__main__':
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
                          config_path)
 
-    #train
-        #run_neat(config)
-    #test_best_network(config)
+    print("1)play solo")
+    print("2) play Best AI")
+    print("3) train AI")
+    #input = input("Mode Selection: ")
+    input = 3
+    if input is 1:
+        play_game()
+    elif input is 2:
+        play_best_ai(config)
+    else:
+        train_ai(config)

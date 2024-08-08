@@ -18,7 +18,10 @@ class Grumpy:
 			self.im_list.append(img)
 		
 		self.reset()
-		
+	def flap(self):
+		#wing_fx.play()
+		self.jumped = True
+		self.vel = -6
 	def update(self):
 		# gravity
 		self.vel += 0.3
@@ -26,14 +29,13 @@ class Grumpy:
 			self.vel = 8
 		if self.rect.bottom <= display_height:
 			self.rect.y += int(self.vel)
-		
+		else:
+			self.alive = False
 		if self.alive:
 			
 			# jump
 			if pygame.mouse.get_pressed()[0] == 1 and not self.jumped:
-				wing_fx.play()
-				self.jumped = True
-				self.vel = -6
+				self.flap()
 			if pygame.mouse.get_pressed()[0] == 0:
 				self.jumped = False
 			

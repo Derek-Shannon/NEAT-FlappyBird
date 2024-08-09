@@ -22,12 +22,8 @@ def eval_genomes(genomes, config):
     Run each genome against eachother one time to determine the fitness.
     """
     win = pygame.display.set_mode((Game.WIDTH, Game.HEIGHT))  
-
-    for i, (genome_id1, genome) in enumerate(genomes):
-        genome.fitness = 0
-        game = Game.Flappy(pygame.display.set_mode(Game.Flappy.SCREEN, pygame.NOFRAME))
-        game.loopAI(genome, config)
-        print(i, genome.fitness)
+    game = Game.Flappy(pygame.display.set_mode(Game.Flappy.SCREEN, pygame.NOFRAME))
+    game.start_AI(genomes, config)
 
 def train_ai(config):
     #p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-85')
@@ -55,7 +51,7 @@ def play_best_ai(config):
 
     game = Game.Flappy(pygame.display.set_mode(Game.Flappy.SCREEN, pygame.NOFRAME))
     winner.fitness = 0
-    game.loopAI(winner, config)
+    game.start_AI([(1, winner)], config)
 def play_game():
     game = Game.Flappy(pygame.display.set_mode(Game.Flappy.SCREEN, pygame.NOFRAME))
     game.loop()

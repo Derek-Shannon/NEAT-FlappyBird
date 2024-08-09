@@ -6,7 +6,7 @@ from Flappy.objects import *
 
 class Flappy:
     SCREEN = WIDTH, HEIGHT = 288, 512
-    FPS = 60
+    FPS = 60 #default 60tps
 
     def __init__(self, window):
         self.win = window
@@ -36,6 +36,7 @@ class Flappy:
         self.pipe_group = pygame.sprite.Group()
         self.base = Base(self.win)
         self.score_img = Score(self.WIDTH // 2, 50, self.win)
+        self.grumpys = []
         self.grumpy = Grumpy(self.win)
 
         # Game variables
@@ -49,7 +50,43 @@ class Flappy:
         self.pipe_pass = False
         self.pipe_frequency = 100
         self.last_pipe = self.cycles - self.pipe_frequency
-        
+    def reset_game(self):
+        self.cycles = 0
+        self.pipe_group = pygame.sprite.Group()
+        self.base = Base(self.win)
+        self.grumpys = []
+        self.game_started = True
+        self.speed = 2
+        self.start_screen = False
+        self.game_over = False
+        self.last_pipe = self.cycles - self.pipe_frequency
+        self.pipe_group.empty()
+        self.speed = 2
+        self.score = 0
+        print("restart!!!")
+    def start_AI(self, genomes, config):
+        for i, (genome_id1, genome) in enumerate(genomes):
+            self.grumpys.append(Grumpy(self.win))
+            genome.fitness = 0
+        running = True
+        while running:
+            self.win.blit(self.bg, (0, 0))
+            aliveCount = 0
+            for i, (genome_id1, genome) in enumerate(genomes):
+                if self.grumpys[i].alive:
+                    self.loopAI(genome, config, self.grumpys[i])
+                    aliveCount += 1
+            if aliveCount is 0 or self.score > 99:
+                running = False
+            
+            self.pipe_group.update(self.speed)
+            self.base.update(self.speed)
+            self.score_img.update(self.score)
+
+            self.clock.tick(self.FPS)                
+            pygame.display.update()
+            self.cycles += 1
+        self.reset_game()
     def loop(self):
         running = True
         while running:
@@ -130,116 +167,96 @@ class Flappy:
             self.clock.tick(self.FPS)
             self.cycles += 1
             pygame.display.update()     
-    def loopAI(self, genome, config):
+    def loopAI(self, genome, config, grumpy):
         net = neat.nn.FeedForwardNetwork.create(genome, config)
-        running = True
-        while running:
-            self.win.blit(self.bg, (0, 0))
-            
-            # Get the closest pipes
-            closest_pipe = None
-            min_dist = float('inf')
-            for pipe in self.pipe_group:
-                dist = pipe.rect.right - self.grumpy.rect.left
-                if dist > 0 and dist < min_dist:
-                    min_dist = dist
-                    closest_pipe = pipe
-            
-            if closest_pipe is not None:
-                bottom_pipe_height = closest_pipe.rect.bottom
-                bottom_pipe_x = closest_pipe.rect.x
-            else:
-                bottom_pipe_x = 1000
-                bottom_pipe_height = self.HEIGHT
-
-            # AI
-            relX = bottom_pipe_x - self.grumpy.rect.x + 50
-            relY =  bottom_pipe_height+100 - self.grumpy.rect.y
-            output = net.activate((
-                relX,
-                relY
-            ))
-            #print(relX,relY)
-            decision = output[0]
+        # Get the closest pipes
+        closest_pipe = None
+        min_dist = float('inf')
+        for pipe in self.pipe_group:
+            dist = pipe.rect.right - grumpy.rect.left
+            if dist > 0 and dist < min_dist:
+                min_dist = dist
+                closest_pipe = pipe
         
-            if decision > 0.5:
-                self.grumpy.flap()
-            
+        if closest_pipe is not None:
+            bottom_pipe_height = closest_pipe.rect.bottom
+            bottom_pipe_x = closest_pipe.rect.x
+        else:
+            bottom_pipe_x = 1000
+            bottom_pipe_height = self.HEIGHT
 
-            if self.start_screen:
-                self.speed = 0
-                self.grumpy.draw_flap()
-                self.base.update(self.speed)
-                self.win.blit(self.flappybird_img, (40, 50))
-            else:
-                if self.game_started and not self.game_over:
-                    next_pipe = self.cycles
-                    time_since_last_pipe = next_pipe - self.last_pipe
+        # AI
+        relX = bottom_pipe_x - grumpy.rect.x + 50
+        relY =  bottom_pipe_height+100 - grumpy.rect.y
+        output = net.activate((
+            relX,
+            relY
+        ))
+        #print(relX,relY)
+        decision = output[0]
+    
+        if decision > 0.5:
+            grumpy.flap()
+        
+        if self.game_started:
+            next_pipe = self.cycles
+            time_since_last_pipe = next_pipe - self.last_pipe
 
-                    if time_since_last_pipe >= self.pipe_frequency:
-                        y = self.base_height // 2
-                        pipe_pos = random.choice(range(-100, 100, 4))
-                        height = y + pipe_pos
+            if time_since_last_pipe >= self.pipe_frequency:
+                y = self.base_height // 2
+                pipe_pos = random.choice(range(-100, 100, 4))
+                height = y + pipe_pos
 
-                        top = Pipe(self.win, self.pipe_img, height, 1)
-                        bottom = Pipe(self.win, self.pipe_img, height, -1)
-                        self.pipe_group.add(top)
-                        self.pipe_group.add(bottom)
-                        self.last_pipe = next_pipe
+                top = Pipe(self.win, self.pipe_img, height, 1)
+                bottom = Pipe(self.win, self.pipe_img, height, -1)
+                self.pipe_group.add(top)
+                self.pipe_group.add(bottom)
+                self.last_pipe = next_pipe
+            grumpy.update()
 
-                self.pipe_group.update(self.speed)
-                self.base.update(self.speed)
-                self.grumpy.update()
-                self.score_img.update(self.score)
+            if pygame.sprite.spritecollide(grumpy, self.pipe_group, False) or grumpy.rect.top <= 0:
+                genome.fitness += self.score*2
+                grumpy.alive = False
 
-                if pygame.sprite.spritecollide(self.grumpy, self.pipe_group, False) or self.grumpy.rect.top <= 0:
-                    genome.fitness += self.score*2
-                    return #calc fitness
+            if grumpy.rect.bottom >= self.base_height:
+                genome.fitness += self.score*2
+                grumpy.alive = False
 
-                if self.grumpy.rect.bottom >= self.base_height:
-                    self.speed = 0
-                    self.game_over = True
-                    genome.fitness += self.score*2
-                    return #calc fitness
+            if len(self.pipe_group) > 0:
+                p = self.pipe_group.sprites()[0]
+                if grumpy.rect.left > p.rect.left and grumpy.rect.right < p.rect.right and not self.pipe_pass and grumpy.alive:
+                    self.pipe_pass = True
 
-                if len(self.pipe_group) > 0:
-                    p = self.pipe_group.sprites()[0]
-                    if self.grumpy.rect.left > p.rect.left and self.grumpy.rect.right < p.rect.right and not self.pipe_pass and self.grumpy.alive:
-                        self.pipe_pass = True
-
-                    if self.pipe_pass:
-                        if self.grumpy.rect.left > p.rect.right:
-                            self.pipe_pass = False
-                            self.score += 1
-                            self.point_fx.play()
-
-            if not self.grumpy.alive:
-                self.win.blit(self.gameover_img, (50, 200))
-
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
+                if self.pipe_pass:
+                    if grumpy.rect.left > p.rect.right:
+                        self.pipe_pass = False
+                        self.score += 1
+                        self.point_fx.play()
+        if self.score >= 100:
+            grumpy.alive = False
+        if not grumpy.alive:
+            genome.fitness += self.score*2
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE or event.key == pygame.K_q:
                     running = False
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE or event.key == pygame.K_q:
-                        running = False
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    if self.game_over:
-                        genome.fitness += self.score*2
-                        return #calc fitness
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if self.game_over:
+                    genome.fitness += self.score*2
+                    grumpy.alive = False
 
-            if self.start_screen:
-                self.game_started = True
-                self.speed = 2
-                self.start_screen = False
-                self.game_over = False
-                self.last_pipe = self.cycles - self.pipe_frequency
-                self.pipe_group.empty()
-                self.speed = 2
-                self.score = 0
-            #self.clock.tick(self.FPS)                
-            pygame.display.update()
-            self.cycles += 1
-            genome.fitness += 0.003
+        if self.start_screen:
+            self.game_started = True
+            self.speed = 2
+            self.start_screen = False
+            self.game_over = False
+            self.last_pipe = self.cycles - self.pipe_frequency
+            self.pipe_group.empty()
+            self.speed = 2
+            self.score = 0
+        genome.fitness += 0.003
 
 # Create an instance of the Flappy class and start the game loop
 if __name__ == "__main__":

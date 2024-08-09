@@ -56,7 +56,9 @@ def play_best_ai(config):
     game = Game.Flappy(pygame.display.set_mode(Game.Flappy.SCREEN, pygame.NOFRAME))
     winner.fitness = 0
     game.loopAI(winner, config)
-
+def play_game():
+    game = Game.Flappy(pygame.display.set_mode(Game.Flappy.SCREEN, pygame.NOFRAME))
+    game.loop()
 
 if __name__ == '__main__':
     local_dir = os.path.dirname(__file__)

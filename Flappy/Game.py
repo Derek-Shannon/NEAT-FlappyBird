@@ -6,10 +6,11 @@ from Flappy.objects import *
 
 class Flappy:
     SCREEN = WIDTH, HEIGHT = 288, 512
-    FPS = 240
+    FPS = 60
 
     def __init__(self, window):
         self.win = window
+        self.cycles = 0
         self.clock = pygame.time.Clock()
 
         # Load assets
@@ -46,8 +47,8 @@ class Flappy:
         self.score = 0
         self.start_screen = True
         self.pipe_pass = False
-        self.pipe_frequency = 1600 * 60 / self.FPS
-        self.last_pipe = pygame.time.get_ticks() - self.pipe_frequency
+        self.pipe_frequency = 100
+        self.last_pipe = self.cycles - self.pipe_frequency
         
     def loop(self):
         running = True
@@ -61,7 +62,7 @@ class Flappy:
                 self.win.blit(self.flappybird_img, (40, 50))
             else:
                 if self.game_started and not self.game_over:
-                    next_pipe = pygame.time.get_ticks()
+                    next_pipe = self.cycles
                     if next_pipe - self.last_pipe >= self.pipe_frequency:
                         y = self.base_height // 2
                         pipe_pos = random.choice(range(-100, 100, 4))
@@ -116,7 +117,8 @@ class Flappy:
                         self.speed = 2
                         self.start_screen = False
                         self.game_over = False
-                        self.last_pipe = pygame.time.get_ticks() - self.pipe_frequency
+                        self.cycles = 0
+                        self.last_pipe = self.cycles - self.pipe_frequency
                         self.pipe_group.empty()
                         self.speed = 2
                         self.score = 0
@@ -126,6 +128,7 @@ class Flappy:
                         self.pipe_img = random.choice(self.im_list)
                         self.bg = self.bg1 #random.choice([self.bg1, self.bg2])
             self.clock.tick(self.FPS)
+            self.cycles += 1
             pygame.display.update()     
     def loopAI(self, genome, config):
         net = neat.nn.FeedForwardNetwork.create(genome, config)
@@ -170,7 +173,7 @@ class Flappy:
                 self.win.blit(self.flappybird_img, (40, 50))
             else:
                 if self.game_started and not self.game_over:
-                    next_pipe = pygame.time.get_ticks()
+                    next_pipe = self.cycles
                     time_since_last_pipe = next_pipe - self.last_pipe
 
                     if time_since_last_pipe >= self.pipe_frequency:
@@ -229,12 +232,13 @@ class Flappy:
                 self.speed = 2
                 self.start_screen = False
                 self.game_over = False
-                self.last_pipe = pygame.time.get_ticks() - self.pipe_frequency
+                self.last_pipe = self.cycles - self.pipe_frequency
                 self.pipe_group.empty()
                 self.speed = 2
                 self.score = 0
             #self.clock.tick(self.FPS)                
             pygame.display.update()
+            self.cycles += 1
             genome.fitness += 0.003
 
 # Create an instance of the Flappy class and start the game loop

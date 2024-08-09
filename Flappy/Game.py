@@ -15,7 +15,7 @@ class Flappy:
         # Load assets
         self.bg1 = pygame.image.load('Flappy/Assets/background-day.png')
         self.bg2 = pygame.image.load('Flappy/Assets/background-night.png')
-        self.bg = random.choice([self.bg1, self.bg2])
+        self.bg = self.bg1 #random.choice([self.bg1, self.bg2])
         
         self.im_list = [pygame.image.load('Flappy/Assets/pipe-green.png'), pygame.image.load('Flappy/Assets/pipe-red.png')]
         self.pipe_img = random.choice(self.im_list)
@@ -46,7 +46,7 @@ class Flappy:
         self.score = 0
         self.start_screen = True
         self.pipe_pass = False
-        self.pipe_frequency = 1600
+        self.pipe_frequency = 1600 * 60 / self.FPS
         self.last_pipe = pygame.time.get_ticks() - self.pipe_frequency
         
     def loop(self):
@@ -124,7 +124,7 @@ class Flappy:
                         self.start_screen = True
                         self.grumpy = Grumpy(self.win)
                         self.pipe_img = random.choice(self.im_list)
-                        self.bg = random.choice([self.bg1, self.bg2])
+                        self.bg = self.bg1 #random.choice([self.bg1, self.bg2])
             self.clock.tick(self.FPS)
             pygame.display.update()     
     def loopAI(self, genome, config):
@@ -152,6 +152,7 @@ class Flappy:
             # AI
             relX = bottom_pipe_x - self.grumpy.rect.x
             relY =  bottom_pipe_height+100 - self.grumpy.rect.y
+            print(relY)
             output = net.activate((
                 relX,
                 relY,
@@ -172,7 +173,9 @@ class Flappy:
             else:
                 if self.game_started and not self.game_over:
                     next_pipe = pygame.time.get_ticks()
-                    if next_pipe - self.last_pipe >= self.pipe_frequency:
+                    time_since_last_pipe = next_pipe - self.last_pipe
+
+                    if time_since_last_pipe >= self.pipe_frequency:
                         y = self.base_height // 2
                         pipe_pos = random.choice(range(-100, 100, 4))
                         height = y + pipe_pos
@@ -181,7 +184,7 @@ class Flappy:
                         bottom = Pipe(self.win, self.pipe_img, height, -1)
                         self.pipe_group.add(top)
                         self.pipe_group.add(bottom)
-                        self.last_pipe = next_pipe
+                        self.last_pipe = next_pipe - (time_since_last_pipe % self.pipe_frequency)
 
                 self.pipe_group.update(self.speed)
                 self.base.update(self.speed)

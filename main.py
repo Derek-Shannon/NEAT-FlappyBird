@@ -17,10 +17,6 @@ class GameDriver:
 
         duration = time.time() - start_time
 
-
-
-
-
 def eval_genomes(genomes, config):
     """
     Run each genome against eachother one time to determine the fitness.
@@ -32,7 +28,6 @@ def eval_genomes(genomes, config):
         game = Game.Flappy(pygame.display.set_mode(Game.Flappy.SCREEN, pygame.NOFRAME))
         game.loopAI(genome, config)
         print(i, genome.fitness)
-
 
 def train_ai(config):
     #p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-85')

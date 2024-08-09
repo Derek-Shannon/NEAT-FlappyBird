@@ -6,7 +6,7 @@ from Flappy.objects import *
 
 class Flappy:
     SCREEN = WIDTH, HEIGHT = 288, 512
-    FPS = 60
+    FPS = 240
 
     def __init__(self, window):
         self.win = window
@@ -150,15 +150,13 @@ class Flappy:
                 bottom_pipe_height = self.HEIGHT
 
             # AI
-            relX = bottom_pipe_x - self.grumpy.rect.x
+            relX = bottom_pipe_x - self.grumpy.rect.x + 50
             relY =  bottom_pipe_height+100 - self.grumpy.rect.y
-            print(relY)
             output = net.activate((
                 relX,
-                relY,
-                self.grumpy.vel
+                relY
             ))
-            #print(relX,relY,self.grumpy.vel)
+            #print(relX,relY)
             decision = output[0]
         
             if decision > 0.5:
@@ -184,7 +182,7 @@ class Flappy:
                         bottom = Pipe(self.win, self.pipe_img, height, -1)
                         self.pipe_group.add(top)
                         self.pipe_group.add(bottom)
-                        self.last_pipe = next_pipe - (time_since_last_pipe % self.pipe_frequency)
+                        self.last_pipe = next_pipe
 
                 self.pipe_group.update(self.speed)
                 self.base.update(self.speed)

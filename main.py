@@ -46,18 +46,16 @@ def train_ai(config):
 
 
 
-def test_best_network(config):
+def play_best_ai(config):
     with open("best.pickle", "rb") as f:
         winner = pickle.load(f)
     winner_net = neat.nn.FeedForwardNetwork.create(winner, config)
     #DLS
 
 
-    width, height = 700, 500
-    win = pygame.display.set_mode((width, height))
-    pygame.display.set_caption("Pong")
-    pong = Flappy(win, width, height)
-    pong.test_ai(winner_net)
+    game = Game.Flappy(pygame.display.set_mode(Game.Flappy.SCREEN, pygame.NOFRAME))
+    winner.fitness = 0
+    game.loopAI(winner, config)
 
 
 if __name__ == '__main__':
@@ -72,7 +70,7 @@ if __name__ == '__main__':
     print("2) play Best AI")
     print("3) train AI")
     #input = input("Mode Selection: ")
-    input = 3
+    input = 2
     if input is 1:
         play_game()
     elif input is 2:
